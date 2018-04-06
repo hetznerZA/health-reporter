@@ -2,14 +2,18 @@ require 'json'
 
 module HealthReporter
   class Reporter
-    def initialize(healthy: true)
-      @healthy = healthy
+    attr_accessor :self_test
+    attr_accessor :unhealthy_cache_ttl
+    attr_accessor :healthy_cache_ttl
+
+    def initialize
+      @self_test           = lambda{ true }
+      @unhealthy_cache_ttl = 30
+      @healthy_cache_ttl   = 60
     end
 
-
-
     def healthy
-      @healthy
+      @self_test.call
     end
   end
 end
