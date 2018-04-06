@@ -41,6 +41,14 @@ describe HealthReporter do
       subject.unhealthy_cache_ttl = 5
       expect(subject.unhealthy_cache_ttl).to eq 5
     end
+
+    it 'remembers when you add a dependencies'
+
+    it 'validates the urls of the dependencies'
+
+    it 'adds dependencies without removing the dependencies already registered'
+
+    it 'does not duplicate similar dependency urls'
   end
 
   context 'when exercising self-test lambda' do
@@ -194,6 +202,19 @@ describe HealthReporter do
       it 'returns the current unhealthy state' do
         expect(subject.healthy?).to be false
       end
+    end
+  end
+
+  context 'when checking dependencies' do
+    context 'when there are no dependencies registered' do
+      it 'only performs the self-test'
+    end
+
+    context 'when there are multiple dependencies registered' do
+      it 'performs the self-test'
+      it 'checks all dependencies'
+      it 'indicates healthy if all of the dependencies are unhealthy'
+      it 'indicates unhealthy if any of the dependencies are unhealthy'
     end
   end
 end

@@ -1,4 +1,5 @@
 require 'singleton'
+require 'uri'
 
 class HealthReporter
   include Singleton
@@ -30,16 +31,19 @@ class HealthReporter
   @@self_test = lambda{ true }
   @@unhealthy_cache_ttl = 30
   @@healthy_cache_ttl   = 60
+  @@dependencies        = {}
   @@last_check_time     = nil
   @@healthy             = nil #Initialized as nil so that first call will set it
   @@semaphore           = Mutex.new
 
-  # TODO
-  # def register_dependency_check(url:, code: 200)
-  #   raise "Configured URL #{url} is invalid" unless url =~ URI::regexp
-  #
-  #   dependencies[]
-  # end
+  def self.clear_dependencies
+    @@dependencies = {}
+  end
+
+  def self.register_dependency(url:, code: 200)
+    raise "Configured URL #{url} is invalid" unless url =~ URI::regexp
+    dependencies['url'] = { :code => code }
+  end
 
   def self.healthy?
     @@semaphore.synchronize {
