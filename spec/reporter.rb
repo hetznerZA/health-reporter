@@ -8,7 +8,8 @@ describe HealthReporter::Reporter do
   end
 
   before(:each) do
-    reset_lamda_runner_spy
+    Timecop.return
+    reset_lambda_runner_spy
   end
 
   context 'when configuring' do
@@ -19,11 +20,11 @@ describe HealthReporter::Reporter do
     end
 
     it 'uses the self-test lambda passed to it' do
-      test_lambda = spy_lambda
+      test_lambda = spy_lambda_returning_false
       subject.self_test = test_lambda
       expect(subject.self_test).to be test_lambda
       expect(subject.healthy?).to be false
-      expect(spy_lamda_was_run?).to eq true
+      expect(spy_lambda_was_run?).to eq true
     end
 
     it 'remembers the cache ttl when healthy' do
@@ -73,53 +74,121 @@ describe HealthReporter::Reporter do
 
   context 'when calling health check for first time (no cached health state)' do
     it 'calls the configured self-test lambda and returns health' do
-      subject.self_test = spy_lambda
+      subject.self_test = spy_lambda_returning_false
       expect(subject.healthy?).to be false
-      expect(spy_lamda_was_run?).to eq true
+      expect(spy_lambda_was_run?).to eq true
     end
   end
 
   context 'when current state is healty' do
     before(:each) do
-      subject.self_test = lambda{ true }
-      subject.healty? #force the self-test
+      subject.self_test = spy_lambda_returning_true
+      subject.healthy? #force the self-test
+      reset_lambda_runner_spy #reset the spy so that we can see if it was run or not
     end
 
     context 'when neither healty-cache-ttl nor unhealty-cache-ttl has expired' do
-      it 'does not call the registered self-test lambda'
-      it 'returns the current healthy state'
+      before(:each) do
+        subject.unhealthy_cache_ttl = 10
+        subject.healthy_cache_ttl   = 10
+        Timecop.freeze(Time.now + 5)
+      end
+
+      it 'does not call the registered self-test lambda' do
+        subject.healthy? #request here and test if it was run in expect below
+        expect(spy_lambda_was_run?).to eq false
+      end
+      it 'returns the current healthy state' do
+        expect(subject.healthy?).to be true
+      end
     end
 
     context 'when healty-cache-ttl has expired' do
-      it 'calls the registered self-test lambda'
-      it 'returns the current healthy state'
+      before do
+        subject.unhealthy_cache_ttl = 10
+        subject.healthy_cache_ttl   =  3
+        Timecop.freeze(Time.now + 5)
+      end
+
+      it 'calls the registered self-test lambda' do
+        subject.healthy? #request here and test if it was run in expect below
+        expect(spy_lambda_was_run?).to eq true
+      end
+      it 'returns the current healthy state' do
+        expect(subject.healthy?).to be true
+      end
     end
 
     context 'when unhealty-cache-ttl has expired' do
-      it 'does not call the registered self-test lambda'
-      it 'returns the current healthy state'
+      before(:each) do
+        subject.unhealthy_cache_ttl =  3
+        subject.healthy_cache_ttl   = 10
+        Timecop.freeze(Time.now + 5)
+      end
+
+      it 'does not call the registered self-test lambda' do
+        subject.healthy? #request here and test if it was run in expect below
+        expect(spy_lambda_was_run?).to eq false
+      end
+      it 'returns the current healthy state' do
+        expect(subject.healthy?).to be true
+      end
     end
   end
 
   context 'when current state is unhealty' do
     before(:each) do
-      subject.self_test = lambda{ false }
-      subject.healty? #force the self-test
+      subject.self_test = spy_lambda_returning_false
+      subject.healthy? #force the self-test
+      reset_lambda_runner_spy #reset the spy so that we can see if it was run or not
     end
 
     context 'when neither healty-cache-ttl nor unhealty-cache-ttl has expired' do
-      it 'does not call the registered self-test lambda'
-      it 'returns the current unhealthy state'
+      before(:each) do
+        subject.unhealthy_cache_ttl = 10
+        subject.healthy_cache_ttl   = 10
+        Timecop.freeze(Time.now + 5)
+      end
+
+      it 'does not call the registered self-test lambda' do
+        subject.healthy? #request here and test if it was run in expect below
+        expect(spy_lambda_was_run?).to eq false
+      end
+      it 'returns the current unhealthy state' do
+        expect(subject.healthy?).to be false
+      end
     end
 
     context 'when healty-cache-ttl has expired' do
-      it 'does not call the registered self-test lambda'
-      it 'returns the current unhealthy state'
+      before(:each) do
+        subject.unhealthy_cache_ttl = 10
+        subject.healthy_cache_ttl   =  3
+        Timecop.freeze(Time.now + 5)
+      end
+
+      it 'does not call the registered self-test lambda' do
+        subject.healthy? #request here and test if it was run in expect below
+        expect(spy_lambda_was_run?).to eq false
+      end
+      it 'returns the current unhealthy state' do
+        expect(subject.healthy?).to be false
+      end
     end
 
     context 'when unhealty-cache-ttl has expired' do
-      it 'calls the registered self-test lambda'
-      it 'returns the current unhealthy state'
+      before(:each) do
+        subject.unhealthy_cache_ttl =  3
+        subject.healthy_cache_ttl   = 10
+        Timecop.freeze(Time.now + 5)
+      end
+
+      it 'calls the registered self-test lambda' do
+        subject.healthy? #request here and test if it was run in expect below
+        expect(spy_lambda_was_run?).to eq true
+      end
+      it 'returns the current unhealthy state' do
+        expect(subject.healthy?).to be false
+      end
     end
   end
 end

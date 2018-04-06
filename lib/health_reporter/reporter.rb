@@ -22,7 +22,7 @@ module HealthReporter
 
     def healthy?
       @semaphore.synchronize {
-        perform_health_check if @health.nil? or cache_ttl_expired
+        perform_health_check if @healthy.nil? or cache_ttl_expired
         @healthy
       }
     end
