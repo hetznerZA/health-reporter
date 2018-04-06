@@ -6,8 +6,10 @@ module HealthReporter
       @healthy = healthy
     end
 
+
+
     def healthy
-      @healthy 
+      @healthy
     end
   end
 end

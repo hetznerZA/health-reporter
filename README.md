@@ -28,7 +28,7 @@ Run the rspec test tests using docker compose:
 
 ```bash
 docker-compose build
-docker-compose run --rm health-reporter
+docker-compose run --rm health-reporter bundle exec rspec -cfd spec/*
 ```
 
 ## Usage
