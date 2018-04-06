@@ -5,7 +5,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'health_reporter/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "health_reporter"
+  spec.name          = "health-reporter"
   spec.version       = HealthReporter::VERSION
   spec.authors       = ["Barney de Villiers"]
   spec.email         = ["barney.de.villiers@hetzner.co.za"]
