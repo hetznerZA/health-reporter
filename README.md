@@ -33,6 +33,7 @@ docker-compose run --rm health-reporter bundle exec rspec -cfd spec/*
 
 ## Usage
 
+#TODO add dependency registration and calling
 
 ## Contributing
 

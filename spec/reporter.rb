@@ -7,6 +7,10 @@ describe HealthReporter::Reporter do
     expect(HealthReporter::VERSION).not_to be nil
   end
 
+  before(:each) do
+    reset_lamda_runner_spy
+  end
+
   context 'when configuring' do
     it 'remembers the self-test lambda passed to it' do
       test_lambda = lambda{ 'ab' == 'cd' }
@@ -15,16 +19,11 @@ describe HealthReporter::Reporter do
     end
 
     it 'uses the self-test lambda passed to it' do
-      test_var_sender = Random.new.rand(1...10000)
-      test_var_receiver = 0
-      test_lambda = lambda{
-        test_var_receiver = test_var_sender
-        return false
-      }
+      test_lambda = spy_lambda
       subject.self_test = test_lambda
       expect(subject.self_test).to be test_lambda
       expect(subject.healthy?).to be false
-      expect(test_var_sender).to eq test_var_receiver
+      expect(spy_lamda_was_run?).to eq true
     end
 
     it 'remembers the cache ttl when healthy' do
@@ -73,30 +72,54 @@ describe HealthReporter::Reporter do
   end
 
   context 'when calling health check for first time (no cached health state)' do
-    it 'calls the configured self-test lambda' do
-
+    it 'calls the configured self-test lambda and returns health' do
+      subject.self_test = spy_lambda
+      expect(subject.healthy?).to be false
+      expect(spy_lamda_was_run?).to eq true
     end
   end
 
   context 'when current state is healty' do
+    before(:each) do
+      subject.self_test = lambda{ true }
+      subject.healty? #force the self-test
+    end
+
     context 'when neither healty-cache-ttl nor unhealty-cache-ttl has expired' do
+      it 'does not call the registered self-test lambda'
+      it 'returns the current healthy state'
     end
 
     context 'when healty-cache-ttl has expired' do
+      it 'calls the registered self-test lambda'
+      it 'returns the current healthy state'
     end
 
     context 'when unhealty-cache-ttl has expired' do
+      it 'does not call the registered self-test lambda'
+      it 'returns the current healthy state'
     end
   end
 
   context 'when current state is unhealty' do
+    before(:each) do
+      subject.self_test = lambda{ false }
+      subject.healty? #force the self-test
+    end
+
     context 'when neither healty-cache-ttl nor unhealty-cache-ttl has expired' do
+      it 'does not call the registered self-test lambda'
+      it 'returns the current unhealthy state'
     end
 
     context 'when healty-cache-ttl has expired' do
+      it 'does not call the registered self-test lambda'
+      it 'returns the current unhealthy state'
     end
 
     context 'when unhealty-cache-ttl has expired' do
+      it 'calls the registered self-test lambda'
+      it 'returns the current unhealthy state'
     end
   end
 end
