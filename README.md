@@ -1,5 +1,6 @@
 # HealthReporter
 
+The HealthReporter gem makes the caching of health check requests on services easy.  Simiply register a lambda returning true/false that determines if the service is healthy or not.  The HealthReporter caches the result for future requests using a TTL value.  If the cache is still valid it will not use the lambda to determine service health.
 
 ## Installation
 
@@ -33,7 +34,47 @@ docker-compose run --rm health-reporter bundle exec rspec -cfd spec/*
 
 ## Usage
 
-#TODO add dependency registration and calling
+### Overview
+
+Out of the box you can simply call it as follows with the preconfigured always true self-check lambda:
+```ruby
+  require 'health_reporter'
+  HealthReporter.healthy?
+  => true
+```
+
+The default values can be overridden as follow:
+```ruby
+  require 'health_reporter'
+  HealthReporter.self_test = lambda{ false }
+  HealthReporter.healthy_cache_ttl = 60
+  HealthReporter.unhealthy_cache_ttl = 30
+  HealthReporter.healthy?
+  => false
+```
+
+### Configuration on startup
+
+First it is set up somewhere in your service startup (config.ru) where you configure how it determines health:
+```ruby
+  require 'health_reporter'
+  HealthReporter.self_test = lambda{ false }
+  HealthReporter.healthy_cache_ttl = 60
+  HealthReporter.unhealthy_cache_ttl = 30
+```
+
+### Health checking via an endpoint
+
+In the controller/model of the health check you simply call the following and based on the boolean return respond with 200 or 500 for other services to see this service health:
+```ruby
+  require 'health_reporter'
+  HealthReporter.healthy?
+  => false
+```
+
+## Future
+
+### Add dependency registration and calling
 
 ## Contributing
 
