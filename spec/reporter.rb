@@ -1,13 +1,18 @@
 require 'spec_helper'
 
-describe HealthReporter::Reporter do
-  subject { HealthReporter::Reporter.new }
+describe HealthReporter do
+  subject { HealthReporter }
 
   it 'has a version number' do
     expect(HealthReporter::VERSION).not_to be nil
   end
 
   before(:each) do
+    subject.healthy_cache_ttl = 60
+    subject.unhealthy_cache_ttl = 30
+    subject.self_test = lambda{ true }
+    subject.class_variable_set(:@@last_check_time, nil)
+    subject.class_variable_set(:@@healthy, nil)
     Timecop.return
     reset_lambda_runner_spy
   end

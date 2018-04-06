@@ -1,4 +1,4 @@
-module HealthReporter
+class HealthReporter
 end
 
 require 'health_reporter/reporter'
