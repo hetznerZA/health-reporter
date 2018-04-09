@@ -13,6 +13,7 @@ describe HealthReporter do
     subject.self_test = lambda{ true }
     subject.class_variable_set(:@@last_check_time, nil)
     subject.class_variable_set(:@@healthy, nil)
+    subject.clear_dependencies
     Timecop.return
     reset_lambda_runner_spy
   end
@@ -42,13 +43,37 @@ describe HealthReporter do
       expect(subject.unhealthy_cache_ttl).to eq 5
     end
 
-    it 'remembers when you add a dependencies'
+    it 'remembers when you add a dependencies' do
+      subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
+      expect(subject.dependencies).to eq({
+        'https://hardware-store/status' => { :code => 123, :timeout => 1 }
+      })
+    end
 
-    it 'validates the urls of the dependencies'
+    it 'validates the urls of the dependencies during registration' do
+      expect{subject.register_dependency(url: 'no-valid-url')}.to raise_error RuntimeError, "Configured URL no-valid-url is invalid"
+    end
 
-    it 'adds dependencies without removing the dependencies already registered'
+    it 'adds dependencies without removing the dependencies already registered' do
+      subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
+      subject.register_dependency(url: 'https://grocery-store/status', code: 123, timeout: 1)
+      expect(subject.dependencies).to eq({
+        'https://hardware-store/status' => { :code => 123, :timeout => 1 },
+        'https://grocery-store/status' => { :code => 123, :timeout => 1 }
+      })
+    end
 
-    it 'does not duplicate similar dependency urls'
+    it 'does not duplicate similar dependency urls' do
+      subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
+      subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
+      subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
+      subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
+      subject.register_dependency(url: 'https://grocery-store/status', code: 123, timeout: 1)
+      expect(subject.dependencies).to eq({
+        'https://hardware-store/status' => { :code => 123, :timeout => 1 },
+        'https://grocery-store/status' => { :code => 123, :timeout => 1 }
+      })
+    end
   end
 
   context 'when exercising self-test lambda' do
@@ -207,14 +232,48 @@ describe HealthReporter do
 
   context 'when checking dependencies' do
     context 'when there are no dependencies registered' do
-      it 'only performs the self-test'
+      it 'only performs the self-test' do
+        subject.self_test = spy_lambda_returning_false
+        expect(subject.healthy?).to be false
+        expect(spy_lambda_was_run?).to eq true
+      end
     end
 
     context 'when there are multiple dependencies registered' do
-      it 'performs the self-test'
-      it 'checks all dependencies'
-      it 'indicates healthy if all of the dependencies are unhealthy'
-      it 'indicates unhealthy if any of the dependencies are unhealthy'
+      before(:each) do
+        subject.register_dependency(url: 'https://hardware-store/status')
+        subject.register_dependency(url: 'https://grocery-store/status')
+        subject.self_test = spy_lambda_returning_true
+      end
+
+      it 'performs the self-test and checks all dependencies' do
+        stub_request(:get, "https://hardware-store/status").to_return(:status => 200, :body => "", :headers => {})
+        stub_request(:get, "https://grocery-store/status").to_return(:status => 200, :body => "", :headers => {})
+        expect(subject.healthy?).to be true
+        expect(spy_lambda_was_run?).to eq true
+      end
+
+      it 'indicates healthy if all of the dependencies are healthy' do
+        stub_request(:get, "https://hardware-store/status").to_return(:status => 200, :body => "", :headers => {})
+        stub_request(:get, "https://grocery-store/status").to_return(:status => 200, :body => "", :headers => {})
+        expect(subject.healthy?).to be true
+        expect(spy_lambda_was_run?).to eq true
+      end
+
+      it 'raises a detailed exception indicating why a dependency was determined to be unhealthy state was uncached' do
+        stub_request(:get, "https://hardware-store/status").to_return(:status => 500, :body => "", :headers => {})
+        stub_request(:get, "https://grocery-store/status").to_return(:status => 200, :body => "", :headers => {})
+        expect{subject.healthy?}.to raise_error RuntimeError, "Dependency <https://hardware-store/status> failed check due to RuntimeError: Response expected to be 200 but is 500"
+      end
+
+      it 'indicates cached unhealthy state if it is unhealthy because a dependency was unhealthy' do
+        stub_request(:get, "https://hardware-store/status").to_return(:status => 500, :body => "", :headers => {})
+        stub_request(:get, "https://grocery-store/status").to_return(:status => 200, :body => "", :headers => {})
+        expect{subject.healthy?}.to raise_error RuntimeError, "Dependency <https://hardware-store/status> failed check due to RuntimeError: Response expected to be 200 but is 500"
+        reset_lambda_runner_spy
+        expect(subject.healthy?).to be false
+        expect(spy_lambda_was_run?).to eq false
+      end
     end
   end
 end

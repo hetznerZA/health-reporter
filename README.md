@@ -72,9 +72,19 @@ In the controller/model of the health check you simply call the following and ba
   => false
 ```
 
-## Future
+### Add service dependencies to check
 
-### Add dependency registration and calling
+In a microservices environment the health of a service is also determined by the health of other services it is reaching out to during normal operation.  This gem allows you to register those dependency services to also be checked.  The dependencies are checked along with the service self-check.  The combined health state will be cached.  Therefore whilst the cache is still valid, the dependencies will also not be rechecked.
+
+```ruby
+  HealthReporter.register_dependency(url: 'https://hardware-store/status')
+```
+
+Or with specific status code and timeout configuration:
+
+```ruby
+  HealthReporter.register_dependency(url: 'https://hardware-store/status', code: 200, timeout: 3)
+```
 
 ## Contributing
 

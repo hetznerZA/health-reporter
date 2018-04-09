@@ -1,5 +1,6 @@
 require 'singleton'
 require 'uri'
+require 'faraday'
 
 class HealthReporter
   include Singleton
@@ -40,9 +41,13 @@ class HealthReporter
     @@dependencies = {}
   end
 
-  def self.register_dependency(url:, code: 200)
+  def self.dependencies
+    @@dependencies
+  end
+
+  def self.register_dependency(url:, code: 200, timeout: 2)
     raise "Configured URL #{url} is invalid" unless url =~ URI::regexp
-    dependencies['url'] = { :code => code }
+    dependencies[url] = { :code => code, :timeout => timeout }
   end
 
   def self.healthy?
@@ -55,8 +60,31 @@ class HealthReporter
   private
 
   def self.perform_health_check
-    @@healthy = sanitize(@@self_test.call)
     @@last_check_time = Time.now
+    @@healthy = sanitize(@@self_test.call)
+    check_dependencies if @@healthy
+  end
+
+  def self.check_dependencies
+    @@dependencies.each { |url, configuration|
+      check_dependency(url: url, configuration: configuration)
+    }
+    @@healthy = true
+  end
+
+  def self.check_dependency(url:, configuration:)
+    conn = Faraday.new(:url => url)
+    response = conn.get do |request|
+      request.options.timeout = configuration[:timeout]
+      request.options.open_timeout = configuration[:timeout]
+    end
+
+    unless response.status == configuration[:code]
+      raise "Response expected to be #{configuration[:code]} but is #{response.status}"
+    end
+  rescue => exception
+    @@healthy = false
+    raise "Dependency <#{url}> failed check due to #{exception.class}: #{exception.message}"
   end
 
   def self.sanitize(result)
