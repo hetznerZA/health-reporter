@@ -37,6 +37,11 @@ class HealthReporter
   @@healthy             = nil #Initialized as nil so that first call will set it
   @@semaphore           = Mutex.new
 
+  def self.clear_cache
+    @@last_check_time     = nil
+    @@healthy             = nil
+  end
+
   def self.clear_dependencies
     @@dependencies = {}
   end

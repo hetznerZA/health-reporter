@@ -74,6 +74,15 @@ describe HealthReporter do
         'https://grocery-store/status' => { :code => 123, :timeout => 1 }
       })
     end
+
+    it 'clears the cache when requested' do
+      subject.healthy?
+      expect(subject.class_variable_get('@@healthy')).to be true
+      expect(subject.class_variable_get('@@last_check_time')).to_not be nil
+      subject.clear_cache
+      expect(subject.class_variable_get('@@healthy')).to be nil
+      expect(subject.class_variable_get('@@last_check_time')).to be nil
+    end
   end
 
   context 'when exercising self-test lambda' do
