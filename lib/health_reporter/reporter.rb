@@ -68,6 +68,9 @@ class HealthReporter
     @@last_check_time = Time.now
     @@healthy = sanitize(@@self_test.call)
     check_dependencies if @@healthy
+  rescue Exception => exception
+    @@healthy = false
+    raise
   end
 
   def self.check_dependencies
@@ -87,7 +90,7 @@ class HealthReporter
     unless response.status == configuration[:code]
       raise "Response expected to be #{configuration[:code]} but is #{response.status}"
     end
-  rescue => exception
+  rescue Exception => exception
     @@healthy = false
     raise "Dependency <#{url}> failed check due to #{exception.class}: #{exception.message}"
   end
