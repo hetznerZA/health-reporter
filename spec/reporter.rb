@@ -94,22 +94,22 @@ describe HealthReporter do
     let(:provided_test_dependencies_with_string_keys) {
       [
         {
-          "url" => "https://outgoing-mail-proxy.hetzner.co.za/health",
+          "url" => "https://cake-place/health",
           "code" => 200,
           "timeout" => 3
         },
         {
-          "url" => "https://tms.hetzner.co.za/tms-service/status",
+          "url" => "https://coffee-place/status",
           "code" => 200,
           "timeout" => 3
         },
         {
-          "url" => "http://mail-manager-staging/status",
+          "url" => "http://postoffice/status",
           "code" => 200,
           "timeout" => 3
         },
         {
-          "url" => "http://mail-manager-staging/status",
+          "url" => "http://postoffice/status",
           "code" => 200,
           "timeout" => 3,
           "authorization_token" => "api_token"
@@ -127,7 +127,7 @@ describe HealthReporter do
           "authorization_token" => "api_token"
         },
         {
-          "url" => "https://api.staging.konsoleh.co.za/health",
+          "url" => "https://pizza-place/health",
           "code" => 204,
           "timeout" => 2,
           "username" => "checker",
@@ -138,22 +138,22 @@ describe HealthReporter do
     let(:provided_test_dependencies_with_symbol_keys) {
       [
         {
-          url: "https://outgoing-mail-proxy.hetzner.co.za/health",
+          url: "https://cake-place/health",
           code: 200,
           timeout: 3
         },
         {
-          url: "https://tms.hetzner.co.za/tms-service/status",
+          url: "https://coffee-place/status",
           code: 200,
           timeout: 3
         },
         {
-          url: "http://mail-manager-staging/status",
+          url: "http://postoffice/status",
           code: 200,
           timeout: 3
         },
         {
-          url: "http://mail-manager-staging/status",
+          url: "http://postoffice/status",
           code: 200,
           timeout: 3,
           authorization_token: "api_token"
@@ -171,7 +171,7 @@ describe HealthReporter do
           authorization_token: "api_token"
         },
         {
-          url: "https://api.staging.konsoleh.co.za/health",
+          url: "https://pizza-place/health",
           code: 204,
           timeout: 2,
           username: "checker",
@@ -181,15 +181,15 @@ describe HealthReporter do
     }
     let(:expected_dependencies) {
       {
-        "https://outgoing-mail-proxy.hetzner.co.za/health" => {
+        "https://cake-place/health" => {
           code: 200,
           timeout: 3
         },
-        "https://tms.hetzner.co.za/tms-service/status" => {
+        "https://coffee-place/status" => {
           code: 200,
           timeout: 3
         },
-        "http://mail-manager-staging/status" => {
+        "http://postoffice/status" => {
           code: 200,
           timeout: 3,
           authorization_token: "api_token"
@@ -199,7 +199,7 @@ describe HealthReporter do
           timeout: 3,
           authorization_token: "api_token"
         },
-        "https://api.staging.konsoleh.co.za/health" => {
+        "https://pizza-place/health" => {
           code: 204,
           timeout: 2,
           username: "checker",
@@ -435,7 +435,7 @@ describe HealthReporter do
         let(:test_dependencies_with_basic_auth) {
           [
             {
-              url: "https://api.staging.konsoleh.co.za/health",
+              url: "https://pizza-place/health",
               code: 204,
               timeout: 2,
               username: "check_user",
@@ -449,17 +449,17 @@ describe HealthReporter do
         end
 
         it 'reaches out to the dependency using a basic auth and dependency have good health' do
-          stub_request(:get, "https://api.staging.konsoleh.co.za/health").
+          stub_request(:get, "https://pizza-place/health").
             with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'Authorization'=>'Basic Y2hlY2tfdXNlcjpjaGVja19wYXNzd29yZA==', 'User-Agent'=>'Faraday v0.15.2'}).
             to_return(:status => 204, :body => "", :headers => {})
           expect(subject.healthy?).to be true
         end
 
         it 'reaches out to the dependency using a basic auth and dependency does not have good health' do
-          stub_request(:get, "https://api.staging.konsoleh.co.za/health").
+          stub_request(:get, "https://pizza-place/health").
             with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'Authorization'=>'Basic Y2hlY2tfdXNlcjpjaGVja19wYXNzd29yZA==', 'User-Agent'=>'Faraday v0.15.2'}).
             to_return(:status => 500, :body => "", :headers => {})
-          expect{subject.healthy?}.to raise_error RuntimeError, "Dependency <https://api.staging.konsoleh.co.za/health> failed check due to RuntimeError: Response expected to be 204 but is 500"
+          expect{subject.healthy?}.to raise_error RuntimeError, "Dependency <https://pizza-place/health> failed check due to RuntimeError: Response expected to be 204 but is 500"
           expect(subject.healthy?).to be false
         end
       end
