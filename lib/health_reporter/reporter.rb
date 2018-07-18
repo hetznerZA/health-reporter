@@ -46,11 +46,22 @@ class HealthReporter
     @@dependencies = {}
   end
 
+  def self.register_dependencies(provided_dependencies = [])
+    provided_dependencies.map{ |dependency|
+      symbolized_dependency = Hash[dependency.map{|(k,v)| [k.to_sym,v]}]
+      raise 'url not defined for dependency' unless symbolized_dependency[:url]
+      add_defaults(symbolized_dependency)
+      dependencies[symbolized_dependency[:url]] = symbolized_dependency
+      dependencies[symbolized_dependency[:url]].delete(:url)
+    }
+  end
+
   def self.dependencies
     @@dependencies
   end
 
   def self.register_dependency(url:, code: 200, timeout: 2)
+    $stderr.puts "The HealthReporter method register_dependency is depreciated. Use fully featured register_dependencies method instead"
     raise "Configured URL #{url} is invalid" unless url =~ URI::regexp
     dependencies[url] = { :code => code, :timeout => timeout }
   end
@@ -63,6 +74,11 @@ class HealthReporter
   end
 
   private
+
+  def self.add_defaults(dependency)
+    dependency[:code] |= 200
+    dependency[:timeout] |= 2
+  end
 
   def self.perform_health_check
     @@last_check_time = Time.now
@@ -81,11 +97,16 @@ class HealthReporter
   end
 
   def self.check_dependency(url:, configuration:)
-    conn = Faraday.new(:url => url)
-    response = conn.get do |request|
-      request.options.timeout = configuration[:timeout]
-      request.options.open_timeout = configuration[:timeout]
+    connection ||= Faraday.new(:url => url) do |faraday|
+      faraday.options[:open_timeout] = configuration[:timeout]
+      faraday.options[:timeout] = configuration[:timeout]
+      faraday.request(:url_encoded)
+      faraday.adapter Faraday.default_adapter
+      puts configuration
+      faraday.basic_auth(configuration[:username], configuration[:password]) if configuration[:username]
     end
+
+    response = connection.get
 
     unless response.status == configuration[:code]
       raise "Response expected to be #{configuration[:code]} but is #{response.status}"
