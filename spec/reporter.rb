@@ -430,6 +430,39 @@ describe HealthReporter do
           expect(spy_lambda_was_run?).to eq false
         end
       end
+
+      context 'when a dependency requires basic auth' do
+        let(:test_dependencies_with_basic_auth) {
+          [
+            {
+              url: "https://api.staging.konsoleh.co.za/health",
+              code: 204,
+              timeout: 2,
+              username: "check_user",
+              password: "check_password"
+            }
+          ]
+        }
+
+        before(:each) do
+          subject.register_dependencies(test_dependencies_with_basic_auth)
+        end
+
+        it 'reaches out to the dependency using a basic auth and dependency have good health' do
+          stub_request(:get, "https://api.staging.konsoleh.co.za/health").
+            with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'Authorization'=>'Basic Y2hlY2tfdXNlcjpjaGVja19wYXNzd29yZA==', 'User-Agent'=>'Faraday v0.15.2'}).
+            to_return(:status => 204, :body => "", :headers => {})
+          expect(subject.healthy?).to be true
+        end
+
+        it 'reaches out to the dependency using a basic auth and dependency does not have good health' do
+          stub_request(:get, "https://api.staging.konsoleh.co.za/health").
+            with(:headers => {'Accept'=>'*/*', 'Accept-Encoding'=>'gzip;q=1.0,deflate;q=0.6,identity;q=0.3', 'Authorization'=>'Basic Y2hlY2tfdXNlcjpjaGVja19wYXNzd29yZA==', 'User-Agent'=>'Faraday v0.15.2'}).
+            to_return(:status => 500, :body => "", :headers => {})
+          expect{subject.healthy?}.to raise_error RuntimeError, "Dependency <https://api.staging.konsoleh.co.za/health> failed check due to RuntimeError: Response expected to be 204 but is 500"
+          expect(subject.healthy?).to be false
+        end
+      end
     end
   end
 end

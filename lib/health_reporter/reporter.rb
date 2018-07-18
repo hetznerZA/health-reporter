@@ -97,11 +97,16 @@ class HealthReporter
   end
 
   def self.check_dependency(url:, configuration:)
-    conn = Faraday.new(:url => url)
-    response = conn.get do |request|
-      request.options.timeout = configuration[:timeout]
-      request.options.open_timeout = configuration[:timeout]
+    connection ||= Faraday.new(:url => url) do |faraday|
+      faraday.options[:open_timeout] = configuration[:timeout]
+      faraday.options[:timeout] = configuration[:timeout]
+      faraday.request(:url_encoded)
+      faraday.adapter Faraday.default_adapter
+      puts configuration
+      faraday.basic_auth(configuration[:username], configuration[:password]) if configuration[:username]
     end
+
+    response = connection.get
 
     unless response.status == configuration[:code]
       raise "Response expected to be #{configuration[:code]} but is #{response.status}"
