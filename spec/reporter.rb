@@ -49,18 +49,18 @@ describe HealthReporter do
   end
 
   describe '#register_dependency' do
-    it 'remembers when you add a dependencies' do
+    it 'remembers when you add a dependency' do
       subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
       expect(subject.dependencies).to eq({
         'https://hardware-store/status' => { :code => 123, :timeout => 1 }
       })
     end
 
-    it 'validates the urls of the dependencies during registration' do
+    it 'validates the urls of the dependency during registration' do
       expect{subject.register_dependency(url: 'no-valid-url')}.to raise_error RuntimeError, "Configured URL no-valid-url is invalid"
     end
 
-    it 'adds dependencies without removing the dependencies already registered' do
+    it 'adds dependency without removing the dependencies already registered' do
       subject.register_dependency(url: 'https://hardware-store/status', code: 123, timeout: 1)
       subject.register_dependency(url: 'https://grocery-store/status', code: 123, timeout: 1)
       expect(subject.dependencies).to eq({
@@ -80,6 +80,143 @@ describe HealthReporter do
         'https://grocery-store/status' => { :code => 123, :timeout => 1 }
       })
     end
+  end
+
+
+  def self.register_dependencies(provided_dependencies = [])
+    provided_dependencies.map{ |dependency|
+      @@dependencies[url] = dependency.delete(:url)
+    }
+  end
+
+
+  describe '#register_dependencies' do
+    let(:provided_test_dependencies_with_string_keys) {
+      [
+        {
+          "url" => "https://outgoing-mail-proxy.hetzner.co.za/health",
+          "code" => 200,
+          "timeout" => 3
+        },
+        {
+          "url" => "https://tms.hetzner.co.za/tms-service/status",
+          "code" => 200,
+          "timeout" => 3
+        },
+        {
+          "url" => "http://mail-manager-staging/status",
+          "code" => 200,
+          "timeout" => 3
+        },
+        {
+          "url" => "http://mail-manager-staging/status",
+          "code" => 200,
+          "timeout" => 3,
+          "authorization_token" => "api_token"
+        },
+        {
+          "url" => "http://duplicated/status",
+          "code" => 200,
+          "timeout" => 3,
+          "authorization_token" => "api_token"
+        },
+        {
+          "url" => "http://duplicated/status",
+          "code" => 200,
+          "timeout" => 3,
+          "authorization_token" => "api_token"
+        },
+        {
+          "url" => "https://api.staging.konsoleh.co.za/health",
+          "code" => 204,
+          "timeout" => 2,
+          "username" => "checker",
+          "password" => "checking"
+        }
+      ]
+    }
+    let(:provided_test_dependencies_with_symbol_keys) {
+      [
+        {
+          url: "https://outgoing-mail-proxy.hetzner.co.za/health",
+          code: 200,
+          timeout: 3
+        },
+        {
+          url: "https://tms.hetzner.co.za/tms-service/status",
+          code: 200,
+          timeout: 3
+        },
+        {
+          url: "http://mail-manager-staging/status",
+          code: 200,
+          timeout: 3
+        },
+        {
+          url: "http://mail-manager-staging/status",
+          code: 200,
+          timeout: 3,
+          authorization_token: "api_token"
+        },
+        {
+          url: "http://duplicated/status",
+          code: 200,
+          timeout: 3,
+          authorization_token: "api_token"
+        },
+        {
+          url: "http://duplicated/status",
+          code: 200,
+          timeout: 3,
+          authorization_token: "api_token"
+        },
+        {
+          url: "https://api.staging.konsoleh.co.za/health",
+          code: 204,
+          timeout: 2,
+          username: "checker",
+          password: "checking"
+        }
+      ]
+    }
+    let(:expected_dependencies) {
+      {
+        "https://outgoing-mail-proxy.hetzner.co.za/health" => {
+          code: 200,
+          timeout: 3
+        },
+        "https://tms.hetzner.co.za/tms-service/status" => {
+          code: 200,
+          timeout: 3
+        },
+        "http://mail-manager-staging/status" => {
+          code: 200,
+          timeout: 3,
+          authorization_token: "api_token"
+        },
+        "http://duplicated/status" => {
+          code: 200,
+          timeout: 3,
+          authorization_token: "api_token"
+        },
+        "https://api.staging.konsoleh.co.za/health" => {
+          code: 204,
+          timeout: 2,
+          username: "checker",
+          password: "checking"
+        }
+      }
+    }
+    it 'remembers when you add the dependencies with string keys' do
+      subject.register_dependencies(provided_test_dependencies_with_string_keys)
+      expect(subject.dependencies).to eq(expected_dependencies)
+    end
+    it 'remembers when you add the dependencies with symbol keys' do
+      subject.register_dependencies(provided_test_dependencies_with_symbol_keys)
+      expect(subject.dependencies).to eq(expected_dependencies)
+    end
+
+
   end
 
   describe '#clear_cache' do
